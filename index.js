@@ -5,8 +5,13 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000;
 
-
 // middleWare
+// const corsConfig = {
+//     origin: ["http://localhost:5173"],
+//     credentials: true,
+//   };
+//   app.use(cors(corsConfig));
+
 app.use(cors())
 app.use(express.json())
 
@@ -27,10 +32,26 @@ async function run() {
         // await client.connect();
 
         const touristsCollection = client.db('touristsDB').collection('tourists')
+        const countryCollection = client.db('touristsDB').collection('country')
 
         app.get('/tourists', async (req, res) => {
             const cursor = touristsCollection.find()
             const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        app.get('/country', async (req, res) => {
+
+            const cursor = countryCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+
+        app.get('/country/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await countryCollection.findOne(query)
             res.send(result)
         })
 
@@ -48,10 +69,29 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/coffee/:id', async (req, res) => {
+
+        app.put('/tourists/:id', async (req, res) => {
             const id = req.params.id
-            const query = { _id: new ObjectId(id) }
-            const result = await coffeeCollection.deleteOne(query)
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updatedTourists = req.body
+            console.log(updatedTourists);
+
+            const TouristsSpot = {
+                $set: {
+                    spotName: updatedTourists.spotName,
+                    countryName: updatedTourists.countryName,
+                    location: updatedTourists.location,
+                    description: updatedTourists.description,
+                    seasonality: updatedTourists.seasonality,
+                    averageCost: updatedTourists.averageCost,
+                    travelTime: updatedTourists.travelTime,
+                    totalVisitor: updatedTourists.totalVisitor,
+                    photoUrl: updatedTourists.photoUrl
+                }
+            }
+
+            const result = await touristsCollection.updateOne(filter, TouristsSpot, options)
             res.send(result)
         })
 
